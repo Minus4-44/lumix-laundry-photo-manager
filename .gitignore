@@ -8,3 +8,7 @@ dist/
 .taste-skill/
 .venv/
 node_modules/
+.venv-mac/
+build-mac/
+dist-mac/
+pianji/ui/lumix.icns

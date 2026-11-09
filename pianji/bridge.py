@@ -5,13 +5,14 @@ from functools import wraps
 from concurrent.futures import ThreadPoolExecutor
 import json
 import os
+import sys
 import logging
 from .domain import uid
 from .services import source, photo_reads
 from .library import Library
 from .previews import PreviewCache
 from .jobs import JobManager
-from .photoshop import validate_executable, open_in_photoshop
+from .photoshop import validate_executable, open_in_photoshop, detect_executable
 from .paths import safe_name, inside
 
 
@@ -61,6 +62,14 @@ class Bridge:
         self._cache = PreviewCache(self._config / "cache")
         self._lib = None
         self._model_root = model_root or Path(__file__).resolve().parents[1] / "models"
+        if sys.platform == "darwin" and not self._settings.get("photoshop"):
+            # macOS: offer an installed Photoshop as the default, without persisting it.
+            try:
+                detected = detect_executable()
+            except Exception:
+                detected = None
+            if detected:
+                self._settings["photoshop"] = str(detected)
         if self._settings.get("library"):
             # Stored library comes only from a prior native folder selection.
             if Path(self._settings["library"]).is_dir():
@@ -80,14 +89,15 @@ class Bridge:
             raise ValueError("桌面窗口尚未就绪")
         import webview
 
+        bundle_pick = kind == "photoshop" and sys.platform == "darwin"
         dialog_type = (
             webview.FileDialog.FOLDER
-            if kind in ("source", "library", "library_parent")
+            if kind in ("source", "library", "library_parent") or bundle_pick
             else webview.FileDialog.OPEN
         )
         types = (
             ("程序 (*.exe)",)
-            if kind == "photoshop"
+            if kind == "photoshop" and not bundle_pick
             else (
                 ("图片 (*.jpg;*.jpeg;*.png;*.tif;*.tiff;*.webp)",)
                 if kind == "export"
@@ -95,7 +105,10 @@ class Bridge:
             )
         )
         result = self._window.create_file_dialog(
-            dialog_type, allow_multiple=False, file_types=types
+            dialog_type,
+            allow_multiple=False,
+            file_types=types,
+            **({"directory": "/Applications"} if bundle_pick else {}),
         )
         return result[0] if result else None
 
@@ -293,7 +306,11 @@ class Bridge:
 
     @api
     def get_settings(self):
-        return {**self._settings, "library_available": bool(self._lib)}
+        return {
+            **self._settings,
+            "library_available": bool(self._lib),
+            "platform": sys.platform,
+        }
 
     @api
     def choose_photoshop(self):

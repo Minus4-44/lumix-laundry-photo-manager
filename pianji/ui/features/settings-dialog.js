@@ -5,11 +5,14 @@ import { modal, field, confirmAction } from "../core/modal.js";
 export async function settingsDialog(refresh) {
   const settings = await api("get_settings");
   const m = modal("设置");
+  const mac = settings.platform === "darwin";
   const path = field(m.content, "Photoshop 程序路径", settings.photoshop || "");
-  path.placeholder = "例如 C:\\Program Files\\Adobe\\…\\Photoshop.exe";
+  path.placeholder = mac
+    ? "例如 /Applications/Adobe Photoshop 2026/Adobe Photoshop 2026.app"
+    : "例如 C:\\Program Files\\Adobe\\…\\Photoshop.exe";
   m.content.append(
     button(
-      "选择 Photoshop.exe",
+      mac ? "选择 Photoshop.app" : "选择 Photoshop.exe",
       async () => {
         try {
           const p = await api("choose_photoshop");
@@ -30,7 +33,8 @@ export async function settingsDialog(refresh) {
       "notice",
       "照片库：" +
         (settings.library || "尚未选择") +
-        "\n照片保存在你选择的文件夹中；设置与缩略图缓存保存在本机AppData。",
+        "\n照片保存在你选择的文件夹中；设置与缩略图缓存保存在本机" +
+        (mac ? "应用数据目录。" : "AppData。"),
     ),
   );
   m.content.append(

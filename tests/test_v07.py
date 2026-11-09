@@ -1,5 +1,6 @@
 from pathlib import Path
 import shutil
+import sys
 import pytest
 from PIL import Image
 from pianji.library import Library
@@ -130,6 +131,7 @@ def test_missing_trash_file_still_prunes_its_empty_asset_directory(fixture):
     assert not (lib.catalog.meta/'回收站'/p['id']).exists()
 
 
+@pytest.mark.skipif(sys.platform!='win32',reason='Windows 回收站 COM 回调仅适用于 Windows')
 def test_recycle_callback_vetoes_permanent_delete_with_com_abort():
     from pianji.library_deletion import _sink_type
     from win32com.server.exception import COMException

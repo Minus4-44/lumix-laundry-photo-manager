@@ -4,6 +4,7 @@ import hashlib
 import json
 import os
 import sqlite3
+import sys
 from contextlib import contextmanager,closing
 from .cleanup import checked_path
 from .domain import uid
@@ -26,7 +27,12 @@ def _sink_type():
 
 
 def recycle_directory(path):
-    if os.name!='nt':raise ValueError('删除照片库到系统回收站仅支持 Windows')
+    if os.name!='nt':
+        if sys.platform!='darwin':raise ValueError('删除照片库到系统回收站仅支持 Windows 与 macOS')
+        from send2trash import send2trash
+        # macOS: NSFileManager moves the bundle to ~/.Trash, still user-recoverable.
+        send2trash(str(path))
+        return
     import pythoncom
     from win32com.shell import shell,shellcon
     pythoncom.CoInitialize()

@@ -32,15 +32,15 @@ export async function libraryDialog(refresh){
     };
     const previewDelete=item=>run(async()=>{
       const plan=await api('inspect_library_delete',item.path);
-      m.content.replaceChildren(el('h3','','删除照片库'),el('p','',`将整个照片库移到 Windows 回收站，包含 ${plan.photo_count} 张照片、原片、成片、回收站照片及该文件夹内的其他文件。`));
-      m.content.append(el('div','notice',plan.path+'\n'+plan.file_count+' 个文件 · 约 '+(plan.bytes/1048576).toFixed(1)+' MB'),el('p','small muted','可从 Windows 回收站还原；清空系统回收站后才释放空间。SD 来源和库外文件保留。'));
+      m.content.replaceChildren(el('h3','','删除照片库'),el('p','',`将整个照片库移到系统回收站，包含 ${plan.photo_count} 张照片、原片、成片、回收站照片及该文件夹内的其他文件。`));
+      m.content.append(el('div','notice',plan.path+'\n'+plan.file_count+' 个文件 · 约 '+(plan.bytes/1048576).toFixed(1)+' MB'),el('p','small muted','可从系统回收站还原；清空系统回收站后才释放空间。SD 来源和库外文件保留。'));
       const label=el('label','','输入照片库名称确认删除'),name=el('input');name.placeholder=plan.name;label.append(name);m.content.append(label);
       const erase=button('移到系统回收站',run(async()=>{
         if(name.value!==plan.name)throw new Error('请输入完整的照片库名称');
         await api('delete_library',plan.token,name.value);
         recent.splice(0,recent.length,...await api('list_libraries'));
         if(item.current){resetLibrarySelection();clearChoices();clearHistory();state.activity=null;state.person='all';state.stage='all';state.browse='folders';invalidateLibraryPreviews()}await refresh();
-        showHome();toast('照片库已移到 Windows 回收站；清空系统回收站后才释放空间');
+        showHome();toast('照片库已移到系统回收站；清空系统回收站后才释放空间');
       }),'destructive');erase.disabled=true;name.oninput=()=>erase.disabled=name.value!==plan.name;
       m.buttons.replaceChildren(button('返回',()=>{m.err.textContent='';showHome()}),erase);name.focus();
     })();

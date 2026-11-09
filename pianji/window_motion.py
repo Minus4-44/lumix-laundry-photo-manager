@@ -1,6 +1,7 @@
 """Short native window fades. All Form/Timer access stays on the Windows UI thread."""
 import ctypes
 import logging
+import sys
 import threading
 import time
 
@@ -49,6 +50,16 @@ def animations_enabled():
 
 def bind_window_motion(window,cleanup):
     """Bind before native Show; preserve normal shutdown/lock release exactly once."""
+    if sys.platform!='win32':
+        # macOS/Linux: native fade uses WinForms only; keep the plain lifecycle.
+        state={'closed':False}
+        def cleanup_once():
+            if state['closed']:return
+            state['closed']=True
+            cleanup()
+        window.events.closed+=lambda *_:cleanup_once()
+        return cleanup_once
+
     state={'fade':None,'timer':None,'failed':False};lock=threading.Lock();cleaned=False
     def cleanup_once():
         nonlocal cleaned
