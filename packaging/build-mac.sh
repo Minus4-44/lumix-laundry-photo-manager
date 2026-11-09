@@ -1,6 +1,8 @@
 #!/bin/bash
 # Build the macOS app bundle and DMG for LUMIX Photo Manager.
-# Usage: bash packaging/build-mac.sh   (macOS, Apple Silicon, Python 3.12)
+# Usage: bash packaging/build-mac.sh             # 只产出 DMG
+#        INSTALL=1 bash packaging/build-mac.sh   # 产出 DMG 并覆盖安装到 /Applications
+# macOS, Apple Silicon, Python 3.12
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -21,7 +23,8 @@ rm -rf build-mac dist-mac
 .venv-mac/bin/python -m PyInstaller --noconfirm --clean \
   --distpath dist-mac --workpath build-mac packaging/pianji-mac.spec
 
-APP="dist-mac/LUMIX Photo Manager.app"
+APP_NAME="LUMIX Photo Manager.app"
+APP="dist-mac/$APP_NAME"
 # Localized display name so Finder shows 「LUMIX 洗衣机管理器」while the bundle
 # keeps an ASCII filename. Must run before signing: resources are sealed.
 mkdir -p "$APP/Contents/Resources/zh_CN.lproj"
@@ -38,6 +41,20 @@ cp packaging/dmg-readme.txt "$STAGE/首次打开说明.txt"
 DMG="dist-mac/LUMIX-Photo-Manager-${VERSION}-arm64.dmg"
 hdiutil create -volname "LUMIX 洗衣机管理器" -srcfolder "$STAGE" \
   -ov -fs HFS+ -format UDZO -imagekey zlib-level=9 "$DMG" >/dev/null
+
+if [ "${INSTALL:-0}" = "1" ]; then
+  pkill -f "/Applications/$APP_NAME/Contents/MacOS" 2>/dev/null || true
+  sleep 1
+  rm -rf "/Applications/$APP_NAME"
+  ditto "$APP" "/Applications/$APP_NAME"
+  echo "已安装到 /Applications/$APP_NAME"
+fi
+
+# Leave exactly one .app on the machine (the installed copy) so Launchpad and
+# Spotlight do not list the build output as a second one. The COLLECT folder is
+# only an intermediate of the BUNDLE step and is dropped as well.
+rm -rf "$APP" "dist-mac/${PIANJI_BUNDLE_NAME:-LUMIX Photo Manager}"
+touch dist-mac/.metadata_never_index
 
 cd dist-mac && shasum -a 256 "$(basename "$DMG")" | tee SHA256SUMS.txt
 echo "完成：$(pwd)/$(basename "$DMG")"
