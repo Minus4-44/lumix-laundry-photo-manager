@@ -11,7 +11,9 @@ pyz=PYZ(a.pure)
 exe=EXE(pyz,a.scripts,[],exclude_binaries=True,name='LUMIX Photo Manager',icon=str(project/'pianji/ui/lumix.icns'),debug=False,bootloader_ignore_signals=False,strip=False,upx=False,console=False,disable_windowed_traceback=False)
 coll=COLLECT(exe,a.binaries,a.datas,strip=False,upx=False,name=os.environ.get('PIANJI_BUNDLE_NAME','LUMIX Photo Manager'))
 app=BUNDLE(coll,name=os.environ.get('PIANJI_APP_NAME','LUMIX Photo Manager.app'),icon=str(project/'pianji/ui/lumix.icns'),bundle_identifier='io.github.edison0315.lumix-photo-manager',info_plist={
-    'CFBundleName':'LUMIX Photo Manager',
+    # The menu bar shows CFBundleName; keep it Chinese so it does not repeat the
+    # LUMIX wordmark already drawn in the app header.
+    'CFBundleName':'洗衣机管理器',
     'CFBundleDisplayName':'LUMIX 洗衣机管理器',
     'CFBundleShortVersionString':'0.12.1',
     'CFBundleVersion':'0.12.1',

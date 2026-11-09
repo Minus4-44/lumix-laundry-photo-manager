@@ -12,7 +12,9 @@ PY=${PYTHON:-$(command -v python3.12 || true)}
 .venv-mac/bin/python -m pip install -q --upgrade pip
 .venv-mac/bin/python -m pip install -q -r packaging/requirements-mac.txt
 
-.venv-mac/bin/python packaging/fetch_models.py
+if [ ! -f models/face_detection_yunet_2023mar.onnx ] || [ ! -f models/face_recognition_sface_2021dec.onnx ]; then
+  .venv-mac/bin/python packaging/fetch_models.py
+fi
 .venv-mac/bin/python packaging/make_icns.py
 
 rm -rf build-mac dist-mac
@@ -20,6 +22,11 @@ rm -rf build-mac dist-mac
   --distpath dist-mac --workpath build-mac packaging/pianji-mac.spec
 
 APP="dist-mac/LUMIX Photo Manager.app"
+# Localized display name so Finder shows 「LUMIX 洗衣机管理器」while the bundle
+# keeps an ASCII filename. Must run before signing: resources are sealed.
+mkdir -p "$APP/Contents/Resources/zh_CN.lproj"
+printf 'CFBundleName = "洗衣机管理器";\nCFBundleDisplayName = "LUMIX 洗衣机管理器";\n' \
+  > "$APP/Contents/Resources/zh_CN.lproj/InfoPlist.strings"
 codesign --force --deep --sign - "$APP"
 codesign --verify --deep --strict "$APP"
 
